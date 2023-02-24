@@ -1,0 +1,1 @@
+Building bike sheds for streams, functional programming, and concurrency patterns in Go.
