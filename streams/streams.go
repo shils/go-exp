@@ -66,11 +66,11 @@ func MergeOrdered[T constraints.Ordered](streams ...<-chan T) <-chan T {
 	return out
 }
 
-func GenerateContext[T any](ctx context.Context, buffer int, initial T, fn func(T) T) <-chan T {
+func GenerateContext[T any](ctx context.Context, buffer int, initial T, fn func(int, T) T) <-chan T {
 	out := make(chan T, buffer)
 	go func() {
 		current := initial
-		for {
+		for i := 0; ; i++ {
 			select {
 			case <-ctx.Done():
 				close(out)
@@ -78,7 +78,7 @@ func GenerateContext[T any](ctx context.Context, buffer int, initial T, fn func(
 			default:
 			}
 			out <- current
-			current = fn(current)
+			current = fn(i, current)
 		}
 	}()
 	return out
@@ -99,26 +99,26 @@ func GenerateWhile[T any](buffer int, initial T, gen func(int, T) T, cond func(i
 	out := make(chan T, buffer)
 	go func() {
 		defer close(out)
-		count := 0
 		current := initial
-		for cond(count, current) {
+		for i := 0; cond(i, current); i++ {
 			out <- current
-			current = gen(count, current)
-			count++
+			current = gen(i, current)
 		}
 	}()
 	return out
 }
 
-func TakeWhile[T any](buffer int, ch <-chan T, fn func(T) bool) <-chan T {
+func TakeWhile[T any](buffer int, ch <-chan T, fn func(int, T) bool) <-chan T {
 	out := make(chan T, buffer)
 	go func() {
 		defer close(out)
+		i := 0
 		for v := range ch {
-			if !fn(v) {
+			if !fn(i, v) {
 				return
 			}
 			out <- v
+			i++
 		}
 	}()
 	return out
@@ -145,12 +145,14 @@ func ReduceContext[A, V any](ctx context.Context, ch <-chan V, initial A, fn fun
 	return acc, nil
 }
 
-func Map[T, V any](buffer int, ch <-chan T, fn func(T) V) <-chan V {
+func Map[T, V any](buffer int, ch <-chan T, fn func(int, T) V) <-chan V {
 	out := make(chan V, buffer)
 	go func() {
 		defer close(out)
+		i := 0
 		for x := range ch {
-			out <- fn(x)
+			out <- fn(i, x)
+			i++
 		}
 	}()
 	return out

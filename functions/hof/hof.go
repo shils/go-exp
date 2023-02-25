@@ -45,3 +45,9 @@ func LiftArity2Right[S, T, U, V any](fn func(T, U) V) func(T, U, S) V {
 		return fn(t, u)
 	}
 }
+
+func IgnoredIndex[T, V any](fn func(T) V) func(int, T) V {
+	return func(_ int, t T) V {
+		return fn(t)
+	}
+}

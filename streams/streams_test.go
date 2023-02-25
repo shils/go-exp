@@ -17,13 +17,13 @@ func Test_MergeOrdered(t *testing.T) {
 	assert.DeepEqual(t, s, []int{0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9})
 }
 
-func Test_Iterate(t *testing.T) {
+func Test_Generate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	out := GenerateContext(ctx, 0, 1, func(i int) int { return 2*i + 1 })
+	out := GenerateContext(ctx, 0, 1, func(_ int, i int) int { return 2*i + 1 })
 	var s []int
 	s = Reduce(
-		TakeWhile(0, out, partials.Lt(20)),
+		TakeWhile(0, out, hof.IgnoredIndex(partials.Lt(20))),
 		s,
 		func(acc []int, val int) []int { return append(acc, val) })
 	cancel()

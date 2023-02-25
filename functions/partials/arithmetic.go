@@ -25,3 +25,13 @@ func Div[T constraints.Real](x T) func(T) T {
 		return y / x
 	}
 }
+
+// degenerate cases: partial unary operators
+
+func Incr[T constraints.Real](x T) T {
+	return x + 1
+}
+
+func Decr[T constraints.Real](x T) T {
+	return x - 1
+}
