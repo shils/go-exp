@@ -30,3 +30,14 @@ func Test_Generate(t *testing.T) {
 
 	assert.DeepEqual(t, s, []int{1, 3, 7, 15})
 }
+
+func Test_Tail(t *testing.T) {
+	ch := GenerateWhile(10, 0, hof.IgnoredIndex(partials.Incr[int]), hof.IgnoredIndex(partials.Lt(10)))
+	ch1 := make(chan int, 10)
+	ch2 := make(chan int, 10)
+
+	go Tee(ch, ch1, ch2)
+
+	assert.DeepEqual(t, Tail(ch1, 4), []int{6, 7, 8, 9})
+	assert.DeepEqual(t, Tail(ch2, 11), []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+}

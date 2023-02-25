@@ -2,6 +2,7 @@ package streams
 
 import (
 	"container/heap"
+	"container/ring"
 	"context"
 	"golang.org/x/exp/constraints"
 )
@@ -170,4 +171,39 @@ func Tee[T any](in <-chan T, outs ...chan<- T) {
 			outs[i] <- x
 		}
 	}
+}
+
+func Tail[T any](ch <-chan T, n int) []T {
+	r := ring.New(n)
+	h := r
+	count := 0
+	for x := range ch {
+		count++
+		r.Value = x
+		r = r.Next()
+	}
+	if count < n {
+		return ringToSlice[T](h, count)
+	}
+	return ringToSlice[T](r, n)
+}
+
+func ringToSlice[T any](r *ring.Ring, sLen int) []T {
+	out := make([]T, sLen)
+	for i := 0; i < sLen; i++ {
+		out[i] = r.Value.(T)
+		r = r.Next()
+	}
+	return out
+}
+
+func FromSlice[T any](buffer int, s []T) <-chan T {
+	out := make(chan T, buffer)
+	go func() {
+		defer close(out)
+		for _, x := range s {
+			out <- x
+		}
+	}()
+	return out
 }
