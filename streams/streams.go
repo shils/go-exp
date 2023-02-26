@@ -23,8 +23,6 @@ func (h indexedHeap[T]) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 // heap
 
 func (h *indexedHeap[T]) Push(x any) {
-	// Push and Pop use pointer receivers because they modify the slice's length,
-	// not just its contents.
 	*h = append(*h, x.(indexedItem[T]))
 }
 
@@ -43,15 +41,15 @@ func MergeOrdered[T constraints.Ordered](streams ...<-chan T) <-chan T {
 		nOpen := len(streams)
 
 		h := &indexedHeap[T]{}
-		heap.Init(h)
 		for i := 0; i < len(streams); i++ {
 			v, ok := <-streams[i]
 			if ok {
-				heap.Push(h, indexedItem[T]{v, i})
+				h.Push(indexedItem[T]{v, i})
 			} else {
 				nOpen--
 			}
 		}
+		heap.Init(h)
 
 		for nOpen > 0 {
 			item := heap.Pop(h).(indexedItem[T])
