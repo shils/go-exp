@@ -4,7 +4,9 @@ import (
 	"container/heap"
 	"container/ring"
 	"context"
+	"go-exp/functions/reducers"
 	"golang.org/x/exp/constraints"
+	"sync"
 )
 
 type indexedItem[T constraints.Ordered] struct {
@@ -169,6 +171,98 @@ func Tee[T any](in <-chan T, outs ...chan<- T) {
 			outs[i] <- x
 		}
 	}
+}
+
+func BufferedTee[T any](bufLen int, in <-chan T, outs ...chan<- T) {
+	n := len(outs)
+	var buf []T
+	lags := make([]int, n)
+
+	closed := false
+	for !closed {
+		// catch up as much as possible without blocking
+		for i, out := range outs {
+			if lags[i] == 0 {
+				continue
+			}
+			sent := sendUntilBlocked(out, buf[len(buf)-lags[i]:])
+			lags[i] -= sent
+		}
+
+		maxLag := 0
+		for _, lag := range lags {
+			maxLag = reducers.Max(maxLag, lag)
+		}
+
+		select {
+		case x, more := <-in:
+			if !more {
+				closed = true
+				break
+			}
+
+			for i, out := range outs {
+				// block on out channels that are `bufLen` items behind
+				if lags[i] == bufLen {
+					out <- buf[0]
+					lags[i]--
+				}
+
+				// blocked out channels can't receive this new element yet
+				if lags[i] != 0 {
+					lags[i] += 1
+					maxLag = reducers.Max(maxLag, lags[i])
+					continue
+				}
+				select {
+				case out <- x:
+				default:
+					lags[i] = 1
+					maxLag = reducers.Max(maxLag, 1)
+				}
+			}
+			// if any out channel is blocked, add the latest in element to our buffer
+			if maxLag > 0 {
+				buf = append(buf, x)
+			}
+		default:
+		}
+		// remove unnecessary elements from the buffer
+		buf = buf[len(buf)-maxLag:]
+	}
+
+	// wait for all blocked out channels to catch up in separate goroutines
+	var wg sync.WaitGroup
+	for i, lag := range lags {
+		out := outs[i]
+		if lag == 0 {
+			close(out)
+			continue
+		}
+
+		wg.Add(1)
+		// only use the portion of the buffer needed by this out channel
+		s := buf[len(buf)-lag:]
+		go func() {
+			defer wg.Done()
+			for _, x := range s {
+				out <- x
+			}
+			close(out)
+		}()
+	}
+	wg.Wait()
+}
+
+func sendUntilBlocked[T any](out chan<- T, vs []T) int {
+	for i, v := range vs {
+		select {
+		case out <- v:
+		default:
+			return i
+		}
+	}
+	return len(vs)
 }
 
 func Tail[T any](ch <-chan T, n int) []T {

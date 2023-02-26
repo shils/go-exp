@@ -41,3 +41,25 @@ func Test_Tail(t *testing.T) {
 	assert.DeepEqual(t, Tail(ch1, 4), []int{6, 7, 8, 9})
 	assert.DeepEqual(t, Tail(ch2, 11), []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 }
+
+func Test_BufferedTee(t *testing.T) {
+	s := []int{1, 2, 3, 4, 5}
+	in := FromSlice(0, s)
+	out1 := make(chan int)
+	out2 := make(chan int)
+	out3 := make(chan int)
+
+	go BufferedTee(5, in, out1, out2, out3)
+
+	s1 := collectors.Slice(out1)
+	s2 := collectors.Slice(out2)
+	s3 := collectors.Slice(out3)
+
+	assertAllSlicesEqual(t, s, s1, s2, s3)
+}
+
+func assertAllSlicesEqual[T any](t *testing.T, expected []T, tss ...[]T) {
+	for _, ts := range tss {
+		assert.DeepEqual(t, expected, ts)
+	}
+}
