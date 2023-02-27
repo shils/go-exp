@@ -70,3 +70,70 @@ func ComputeAll[K comparable, V any](ctx context.Context, fn func(context.Contex
 	}
 	return fut
 }
+
+type Reducible[V any] interface {
+	Reduce(V) V
+}
+
+func MapReduce[V Reducible[V], K any](ctx context.Context, fn func(context.Context, K) (V, error), initial V, keys ...K) Future[V] {
+	fut := &future[V]{done: make(chan struct{})}
+	results := make(chan V)
+	errCh := make(chan error)
+
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(len(keys))
+
+	go func() {
+		defer close(fut.done)
+		acc := initial
+		count := 0
+		for {
+			select {
+			case v, more := <-results:
+				if !more {
+					break
+				}
+				acc = acc.Reduce(v)
+				count++
+			case err, more := <-errCh:
+				if !more {
+					break
+				}
+				fut.err = err
+				return
+			}
+			if count == len(keys) {
+				fut.value = acc
+				return
+			}
+		}
+	}()
+
+	for _, k := range keys {
+		key := k
+		g.Go(func() error {
+			v, err := fn(gCtx, key)
+			if err != nil {
+				return err
+			}
+
+			select {
+			case <-gCtx.Done():
+				return gCtx.Err()
+			default:
+			}
+			results <- v
+			return nil
+		})
+	}
+
+	go func() {
+		if err := g.Wait(); err != nil {
+			errCh <- err
+		}
+		close(errCh)
+		close(results)
+	}()
+
+	return fut
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"gotest.tools/v3/assert"
+	"strings"
 	"testing"
 	"time"
 )
@@ -83,6 +84,58 @@ func Test_ComputeAllDone(t *testing.T) {
 			}
 		}
 	}
+}
+
+type wordCounts map[string]int
+
+func (wc wordCounts) Reduce(other wordCounts) wordCounts {
+	for k, v1 := range other {
+		v0 := wc[k]
+		wc[k] = v0 + v1
+	}
+	return wc
+}
+
+func countWords(ctx context.Context, words string) (wordCounts, error) {
+	m := make(map[string]int)
+	for _, s := range strings.Fields(words) {
+		c := m[s]
+		m[s] = c + 1
+	}
+	return m, nil
+}
+
+func Test_MapReduce(t *testing.T) {
+	keys := []string{"cat dog", "pig cat", "dog dog", "pig mouse pig"}
+	fut := MapReduce(context.Background(), countWords, make(map[string]int), keys...)
+	expected := wordCounts{
+		"cat":   2,
+		"dog":   3,
+		"pig":   3,
+		"mouse": 1,
+	}
+
+	res, err := fut.Get()
+	assert.DeepEqual(t, expected, res)
+	assert.NilError(t, err)
+}
+
+func Test_MapReduceError(t *testing.T) {
+	tooManyWordsErr := errors.New("too many words")
+
+	keys := []string{"cat dog", "pig cat", "dog dog", "pig mouse pig"}
+	badCountWords := func(ctx context.Context, key string) (wordCounts, error) {
+		if len(strings.Fields(key)) > 2 {
+			return nil, tooManyWordsErr
+		}
+		return countWords(ctx, key)
+	}
+
+	fut := MapReduce(context.Background(), badCountWords, make(map[string]int), keys...)
+
+	res, err := fut.Get()
+	assert.Assert(t, res == nil)
+	assert.ErrorIs(t, err, tooManyWordsErr)
 }
 
 func zero[T any]() T {
