@@ -124,6 +124,26 @@ func TakeWhile[T any](buffer int, ch <-chan T, fn func(int, T) bool) <-chan T {
 	return out
 }
 
+func DropWhile[T any](buffer int, ch <-chan T, fn func(int, T) bool) <-chan T {
+	out := make(chan T, buffer)
+	go func() {
+		defer close(out)
+		i := -1
+		for v := range ch {
+			i++
+			if !fn(i, v) {
+				out <- v
+				break
+			}
+		}
+		for v := range ch {
+			i++
+			out <- v
+		}
+	}()
+	return out
+}
+
 func Reduce[A, V any](ch <-chan V, initial A, fn func(A, V) A) A {
 	acc := initial
 	for v := range ch {
@@ -143,6 +163,34 @@ func ReduceContext[A, V any](ctx context.Context, ch <-chan V, initial A, fn fun
 		acc = fn(acc, v)
 	}
 	return acc, nil
+}
+
+func Filter[T any](buffer int, ch <-chan T, fn func(int, T) bool) <-chan T {
+	out := make(chan T, buffer)
+	go func() {
+		defer close(out)
+		i := 0
+		for x := range ch {
+			if fn(i, x) {
+				out <- x
+			}
+			i++
+		}
+	}()
+	return out
+}
+
+func DoWithIndex[T, V any](ch <-chan T, fn func(int, T)) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		i := 0
+		for x := range ch {
+			fn(i, x)
+			i++
+		}
+	}()
+	return done
 }
 
 func Map[T, V any](buffer int, ch <-chan T, fn func(int, T) V) <-chan V {

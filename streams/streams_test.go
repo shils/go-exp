@@ -6,6 +6,7 @@ import (
 	"go-exp/functions/partials"
 	"go-exp/streams/collectors"
 	"gotest.tools/v3/assert"
+	"strings"
 	"testing"
 )
 
@@ -74,6 +75,23 @@ func Test_Map(t *testing.T) {
 	}()
 
 	assert.DeepEqual(t, collectors.Slice(out), []int{0, 2, 6, 12})
+}
+
+func Test_DropWhile(t *testing.T) {
+	in := make(chan string)
+	out := DropWhile(0, in, hof.IgnoredIndex(func(s string) bool {
+		return strings.HasPrefix(s, "a")
+	}))
+
+	go func() {
+		in <- "abc"
+		in <- "a"
+		in <- "b"
+		in <- "a"
+		defer close(in)
+	}()
+
+	assert.DeepEqual(t, collectors.Slice(out), []string{"b", "a"})
 }
 
 func assertAllSlicesEqual[T any](t *testing.T, expected []T, tss ...[]T) {
