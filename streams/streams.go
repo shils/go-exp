@@ -2,7 +2,6 @@ package streams
 
 import (
 	"container/heap"
-	"container/ring"
 	"context"
 	"go-exp/functions/reducers"
 	"golang.org/x/exp/constraints"
@@ -266,27 +265,16 @@ func sendUntilBlocked[T any](out chan<- T, vs []T) int {
 }
 
 func Tail[T any](ch <-chan T, n int) []T {
-	r := ring.New(n)
-	h := r
+	buf := make([]T, n)
 	count := 0
 	for x := range ch {
+		buf[count%n] = x
 		count++
-		r.Value = x
-		r = r.Next()
 	}
-	if count < n {
-		return ringToSlice[T](h, count)
+	if count <= n {
+		return buf[0:count:count]
 	}
-	return ringToSlice[T](r, n)
-}
-
-func ringToSlice[T any](r *ring.Ring, sLen int) []T {
-	out := make([]T, sLen)
-	for i := 0; i < sLen; i++ {
-		out[i] = r.Value.(T)
-		r = r.Next()
-	}
-	return out
+	return append(buf[count%n:], buf[:count%n]...)
 }
 
 func FromSlice[T any](buffer int, s []T) <-chan T {

@@ -39,7 +39,8 @@ func Test_Tail(t *testing.T) {
 	go Tee(ch, ch1, ch2)
 
 	assert.DeepEqual(t, Tail(ch1, 4), []int{6, 7, 8, 9})
-	assert.DeepEqual(t, Tail(ch2, 11), []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+	// number of channel items < n
+	assert.DeepEqual(t, Tail(ch2, 20), []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 }
 
 func Test_BufferedTee(t *testing.T) {
@@ -56,6 +57,23 @@ func Test_BufferedTee(t *testing.T) {
 	s3 := collectors.Slice(out3)
 
 	assertAllSlicesEqual(t, s, s1, s2, s3)
+}
+
+func Test_Map(t *testing.T) {
+	in := make(chan int)
+	out := Map(0, in, func(i int, k int) int {
+		return i * k
+	})
+
+	go func() {
+		in <- 1
+		in <- 2
+		in <- 3
+		in <- 4
+		close(in)
+	}()
+
+	assert.DeepEqual(t, collectors.Slice(out), []int{0, 2, 6, 12})
 }
 
 func assertAllSlicesEqual[T any](t *testing.T, expected []T, tss ...[]T) {
