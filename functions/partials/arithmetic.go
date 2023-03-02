@@ -1,6 +1,9 @@
 package partials
 
-import "go-exp/constraints"
+import (
+	"go-exp/constraints"
+	goconstraints "golang.org/x/exp/constraints"
+)
 
 func Add[T constraints.Real](x T) func(T) T {
 	return func(y T) T {
@@ -26,12 +29,8 @@ func Div[T constraints.Real](x T) func(T) T {
 	}
 }
 
-// degenerate cases: partial unary operators
-
-func Incr[T constraints.Real](x T) T {
-	return x + 1
-}
-
-func Decr[T constraints.Real](x T) T {
-	return x - 1
+func Mod[T goconstraints.Integer](x T) func(T) T {
+	return func(y T) T {
+		return y % x
+	}
 }

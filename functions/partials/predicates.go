@@ -1,26 +1,30 @@
 package partials
 
-import "golang.org/x/exp/constraints"
+import (
+	"golang.org/x/exp/constraints"
+)
 
-func Gt[T constraints.Ordered](x T) func(T) bool {
+type Predicate[T any] func(T) bool
+
+func Gt[T constraints.Ordered](x T) Predicate[T] {
 	return func(y T) bool {
 		return y > x
 	}
 }
 
-func Lt[T constraints.Ordered](x T) func(T) bool {
+func Lt[T constraints.Ordered](x T) Predicate[T] {
 	return func(y T) bool {
 		return y < x
 	}
 }
 
-func Eq[T comparable](x T) func(T) bool {
+func Eq[T comparable](x T) Predicate[T] {
 	return func(y T) bool {
 		return y == x
 	}
 }
 
-func Ne[T comparable](x T) func(T) bool {
+func Ne[T comparable](x T) Predicate[T] {
 	return func(y T) bool {
 		return y != x
 	}
