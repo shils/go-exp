@@ -95,6 +95,69 @@ func Test_DropWhile(t *testing.T) {
 	assert.DeepEqual(t, collectors.Slice(out), []string{"b", "a"})
 }
 
+func Test_Find(t *testing.T) {
+	in := make(chan int)
+	go func() {
+		in <- 2
+		in <- 3
+		in <- 7
+		close(in)
+	}()
+
+	result, found := Find(in, partials.Gt(5))
+
+	assert.Equal(t, result, 7)
+	assert.Check(t, found)
+}
+
+func Test_FindFail(t *testing.T) {
+	in := make(chan int)
+	go func() {
+		in <- 2
+		in <- 3
+		in <- 1
+		close(in)
+	}()
+
+	result, found := Find(in, partials.Gt(5))
+
+	assert.Equal(t, result, 0)
+	assert.Check(t, !found)
+}
+
+func Test_FindLast(t *testing.T) {
+	in := make(chan int)
+
+	go func() {
+		in <- 2
+		in <- 8
+		in <- 7
+		in <- 1
+		close(in)
+	}()
+
+	result, found := FindLast(in, partials.Gt(5))
+
+	assert.Equal(t, result, 7)
+	assert.Check(t, found)
+}
+
+func Test_FindLastFail(t *testing.T) {
+	in := make(chan int)
+
+	go func() {
+		in <- 2
+		in <- 1
+		in <- 3
+		close(in)
+	}()
+
+	result, found := FindLast(in, partials.Gt(5))
+
+	assert.Equal(t, result, 0)
+	assert.Check(t, !found)
+}
+
 func assertAllSlicesEqual[T any](t *testing.T, expected []T, tss ...[]T) {
 	for _, ts := range tss {
 		assert.DeepEqual(t, expected, ts)

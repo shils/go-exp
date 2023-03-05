@@ -335,3 +335,22 @@ func FromSlice[T any](buffer int, s []T) <-chan T {
 	}()
 	return out
 }
+
+func Find[T any](ch <-chan T, fn func(T) bool) (result T, found bool) {
+	for x := range ch {
+		if fn(x) {
+			return x, true
+		}
+	}
+	return
+}
+
+func FindLast[T any](ch <-chan T, fn func(T) bool) (result T, found bool) {
+	for x := range ch {
+		if fn(x) {
+			result = x
+			found = true
+		}
+	}
+	return
+}
