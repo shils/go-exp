@@ -13,3 +13,8 @@ func IsNilPtr[T any](t *T) bool {
 func XorNilPtr[A any, B any](a *A, b *B) bool {
 	return IsNilPtr(a) != IsNilPtr(b)
 }
+
+func Zero[T any]() T {
+	var ret T
+	return ret
+}

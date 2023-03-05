@@ -27,3 +27,16 @@ func Test_XorNilPtr(t *testing.T) {
 	assert.Check(t, XorNilPtr(sp, &f))
 	assert.Check(t, !XorNilPtr[string, bool](sp, nil))
 }
+
+func Test_Zero(t *testing.T) {
+	var s []string
+	assert.DeepEqual(t, Zero[[]string](), s)
+
+	type foo struct {
+		a string
+	}
+	var f foo
+	assert.Equal(t, Zero[foo](), f)
+}
+
+
