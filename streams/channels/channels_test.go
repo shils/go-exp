@@ -1,4 +1,4 @@
-package streams
+package channels
 
 import (
 	"context"
