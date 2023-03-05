@@ -3,6 +3,7 @@ package channels
 import (
 	"context"
 	"go-exp/functions/hof"
+	"go-exp/functions/operators"
 	"go-exp/functions/partials"
 	"go-exp/streams/collectors"
 	"gotest.tools/v3/assert"
@@ -33,7 +34,7 @@ func Test_Generate(t *testing.T) {
 }
 
 func Test_Tail(t *testing.T) {
-	ch := GenerateWhile(10, 0, hof.IgnoredIndex(partials.Incr[int]), hof.IgnoredIndex(partials.Lt(10)))
+	ch := GenerateWhile(10, 0, hof.IgnoredIndex(operators.Incr[int]), hof.IgnoredIndex(partials.Lt(10)))
 	ch1 := make(chan int, 10)
 	ch2 := make(chan int, 10)
 
