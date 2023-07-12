@@ -1,6 +1,9 @@
 package operators
 
-import "reflect"
+import (
+	"golang.org/x/exp/constraints"
+	"reflect"
+)
 
 func Append[T any](xs []T, x T) []T {
 	return append(xs, x)
@@ -85,4 +88,24 @@ func Len(iv interface{}) int {
 	default:
 		return reflect.ValueOf(x).Len()
 	}
+}
+
+func Copy[T any](dst, src []T) int {
+	return copy(dst, src)
+}
+
+func Delete[K comparable, V any](m map[K]V, key K) {
+	delete(m, key)
+}
+
+func Complex[T constraints.Float](r, i T) complex128 {
+	return complex(float64(r), float64(i))
+}
+
+func Real[T constraints.Complex](c T) float64 {
+	return real(complex128(c))
+}
+
+func Imag[T constraints.Complex](c T) float64 {
+	return imag(complex128(c))
 }
