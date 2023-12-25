@@ -32,10 +32,10 @@ func Test_And(t *testing.T) {
 	}
 }
 
-func Test_BXor(t *testing.T) {
+func Test_Xor(t *testing.T) {
 	for _, test := range booleanPredicateCases {
 		expected := test.l != test.r
-		if BXor(test.l, test.r) != expected {
+		if Xor(test.l, test.r) != expected {
 			t.Errorf("Xor(%v, %v) should be %v", test.l, test.r, expected)
 		}
 	}

@@ -27,11 +27,11 @@ func Or(x bool, y bool) bool {
 	return x || y
 }
 
-func BXor(x bool, y bool) bool {
+func Xor(x bool, y bool) bool {
 	return x != y
 }
 
-func Xor[T constraints.Integer](x T, y T) T {
+func BwXor[T constraints.Integer](x T, y T) T {
 	return x ^ y
 }
 
