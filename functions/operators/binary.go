@@ -35,6 +35,14 @@ func BwXor[T constraints.Integer](x T, y T) T {
 	return x ^ y
 }
 
+func BwAnd[T constraints.Integer](x T, y T) T {
+	return x & y
+}
+
+func BwOr[T constraints.Integer](x T, y T) T {
+	return x | y
+}
+
 func Add[T xconstraints.Real](x T, y T) T {
 	return x + y
 }
