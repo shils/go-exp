@@ -1,7 +1,7 @@
 package collectors
 
 func Slice[T any](ch <-chan T) []T {
-	var s []T
+	s := make([]T, 0)
 	for x := range ch {
 		s = append(s, x)
 	}
