@@ -25,6 +25,7 @@ func Of[T any](in <-chan T) ChannelStream[T, T] {
 func (cs *channelStream[T, V]) Out() <-chan V {
 	ch := make(chan V)
 	go func() {
+		defer close(ch)
 		for x := range cs.input {
 			r, ok := cs.fn(x)
 			if ok {
