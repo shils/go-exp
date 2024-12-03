@@ -190,7 +190,7 @@ func BufferedTee[T any](bufLen int, in <-chan T, outs ...chan<- T) {
 			if lags[i] == 0 {
 				continue
 			}
-			sent := sendUntilBlocked(out, buf[len(buf)-lags[i]:])
+			sent := SendUntilBlocked(out, buf[len(buf)-lags[i]:])
 			lags[i] -= sent
 		}
 
@@ -257,17 +257,6 @@ func BufferedTee[T any](bufLen int, in <-chan T, outs ...chan<- T) {
 		}()
 	}
 	wg.Wait()
-}
-
-func sendUntilBlocked[T any](out chan<- T, vs []T) int {
-	for i, v := range vs {
-		select {
-		case out <- v:
-		default:
-			return i
-		}
-	}
-	return len(vs)
 }
 
 func Tail[T any](ch <-chan T, n int) []T {
