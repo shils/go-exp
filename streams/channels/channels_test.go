@@ -7,6 +7,7 @@ import (
 	"go-exp/functions/partials"
 	"go-exp/streams/collectors"
 	"gotest.tools/v3/assert"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -156,6 +157,19 @@ func Test_FindLastFail(t *testing.T) {
 
 	assert.Equal(t, result, 0)
 	assert.Check(t, !found)
+}
+
+func Test_Iterator(t *testing.T) {
+	in := make(chan int, 3)
+	go func() {
+		in <- 3
+		in <- 1
+		in <- 2
+		close(in)
+	}()
+
+	it := Iterator(in)
+	assert.DeepEqual(t, slices.Collect(it), []int{3, 1, 2})
 }
 
 func assertAllSlicesEqual[T any](t *testing.T, expected []T, tss ...[]T) {

@@ -354,3 +354,13 @@ func FindLast[T any](ch <-chan T, fn func(T) bool) (result T, found bool) {
 	}
 	return
 }
+
+func Iterator[T any](ch <-chan T) func(func(T) bool) {
+	return func(yield func(T) bool) {
+		for x := range ch {
+			if !yield(x) {
+				break
+			}
+		}
+	}
+}
