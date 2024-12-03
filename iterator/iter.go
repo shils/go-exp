@@ -132,3 +132,12 @@ func CompactFunc[T any](it iter.Seq[T], eq func(T, T) bool) iter.Seq[T] {
 		}
 	}
 }
+
+func GroupBy[T, K comparable](it iter.Seq[T], keyFn func(T) K) map[K][]T {
+	m := make(map[K][]T)
+	for t := range it {
+		k := keyFn(t)
+		m[k] = append(m[k], t)
+	}
+	return m
+}

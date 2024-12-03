@@ -111,3 +111,12 @@ func TestCompactFunc(t *testing.T) {
 	expected := []int{2, 1, 9}
 	assert.DeepEqual(t, result, expected)
 }
+
+func TestGroupBy(t *testing.T) {
+	it := slices.Values([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10})
+	result := GroupBy(it, func(n int) bool {
+		return n%2 == 0
+	})
+
+	assert.DeepEqual(t, result, map[bool][]int{false: {1, 3, 5, 7, 9}, true: {2, 4, 6, 8, 10}})
+}
