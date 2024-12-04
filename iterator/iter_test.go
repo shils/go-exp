@@ -120,3 +120,20 @@ func TestGroupBy(t *testing.T) {
 
 	assert.DeepEqual(t, result, map[bool][]int{false: {1, 3, 5, 7, 9}, true: {2, 4, 6, 8, 10}})
 }
+
+func TestTakeWhile(t *testing.T) {
+	tests := []struct {
+		s    []int
+		cond func(int) bool
+		want []int
+	}{
+		{[]int{1, 2, 3, 4, 5, 6}, func(n int) bool { return n < 4 }, []int{1, 2, 3}},
+		{[]int{5, 1, 2, 3, 4}, func(n int) bool { return n < 5 }, nil},
+	}
+
+	for _, tc := range tests {
+		it := slices.Values(tc.s)
+		result := slices.Collect(TakeWhile(it, tc.cond))
+		assert.DeepEqual(t, result, tc.want)
+	}
+}

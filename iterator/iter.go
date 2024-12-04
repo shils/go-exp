@@ -141,3 +141,13 @@ func GroupBy[T, K comparable](it iter.Seq[T], keyFn func(T) K) map[K][]T {
 	}
 	return m
 }
+
+func TakeWhile[T any](it func(func(T) bool), cond func(T) bool) func(func(T) bool) {
+	return func(yield func(T) bool) {
+		for t := range it {
+			if !cond(t) || !yield(t) {
+				return
+			}
+		}
+	}
+}
