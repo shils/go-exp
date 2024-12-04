@@ -4,7 +4,7 @@ import (
 	"iter"
 )
 
-func Map[T, V any](it iter.Seq[T], fn func(T) V) iter.Seq[V] {
+func Map[T, V any](it func(func(T) bool), fn func(T) V) func(func(V) bool) {
 	return func(yield func(V) bool) {
 		for t := range it {
 			if !yield(fn(t)) {
@@ -14,7 +14,7 @@ func Map[T, V any](it iter.Seq[T], fn func(T) V) iter.Seq[V] {
 	}
 }
 
-func Map2[T, V, W any](it iter.Seq[T], fn func(T) (V, W)) iter.Seq2[V, W] {
+func Map2[T, V, W any](it func(func(T) bool), fn func(T) (V, W)) func(func(V, W) bool) {
 	return func(yield func(V, W) bool) {
 		for t := range it {
 			if !yield(fn(t)) {
@@ -24,7 +24,7 @@ func Map2[T, V, W any](it iter.Seq[T], fn func(T) (V, W)) iter.Seq2[V, W] {
 	}
 }
 
-func Filter[T any](it iter.Seq[T], fn func(T) bool) iter.Seq[T] {
+func Filter[T any](it func(func(T) bool), fn func(T) bool) func(func(T) bool) {
 	return func(yield func(T) bool) {
 		for t := range it {
 			if fn(t) && !yield(t) {
@@ -34,7 +34,7 @@ func Filter[T any](it iter.Seq[T], fn func(T) bool) iter.Seq[T] {
 	}
 }
 
-func Reduce[T, V any](it iter.Seq[T], fn func(V, T) V, init V) V {
+func Reduce[T, V any](it func(func(T) bool), fn func(V, T) V, init V) V {
 	acc := init
 	for t := range it {
 		acc = fn(acc, t)
@@ -45,7 +45,7 @@ func Reduce[T, V any](it iter.Seq[T], fn func(V, T) V, init V) V {
 
 // Zip returns an iterator that yields pairs of elements from the two input iterators, terminating when either
 // iterator is exhausted
-func Zip[T, U any](it iter.Seq[T], other iter.Seq[U]) iter.Seq2[T, U] {
+func Zip[T, U any](it func(func(T) bool), other func(func(U) bool)) func(func(T, U) bool) {
 	return func(yield func(T, U) bool) {
 		next, stop := iter.Pull(other)
 		defer stop()
@@ -60,7 +60,7 @@ func Zip[T, U any](it iter.Seq[T], other iter.Seq[U]) iter.Seq2[T, U] {
 
 // ZipWith returns an iterator that yields the results of applying a function to pairs of elements from the two input
 // iterators, terminating when either iterator is exhausted
-func ZipWith[T, U, V any](it iter.Seq[T], other iter.Seq[U], fn func(T, U) V) iter.Seq[V] {
+func ZipWith[T, U, V any](it func(func(T) bool), other func(func(U) bool), fn func(T, U) V) func(func(V) bool) {
 	return func(yield func(V) bool) {
 		next, stop := iter.Pull(other)
 		defer stop()
@@ -73,7 +73,7 @@ func ZipWith[T, U, V any](it iter.Seq[T], other iter.Seq[U], fn func(T, U) V) it
 	}
 }
 
-func Indexed[T any](it iter.Seq[T]) iter.Seq2[int, T] {
+func Indexed[T any](it func(func(T) bool)) func(func(int, T) bool) {
 	return func(yield func(int, T) bool) {
 		i := 0
 		for t := range it {
@@ -85,7 +85,7 @@ func Indexed[T any](it iter.Seq[T]) iter.Seq2[int, T] {
 	}
 }
 
-func Concat[T any](its ...iter.Seq[T]) iter.Seq[T] {
+func Concat[T any](its ...func(func(T) bool)) func(func(T) bool) {
 	return func(yield func(T) bool) {
 		for _, it := range its {
 			for t := range it {
@@ -97,7 +97,7 @@ func Concat[T any](its ...iter.Seq[T]) iter.Seq[T] {
 	}
 }
 
-func Compact[T comparable](it iter.Seq[T]) iter.Seq[T] {
+func Compact[T comparable](it func(func(T) bool)) func(func(T) bool) {
 	return func(yield func(T) bool) {
 		var last T
 		var started bool
@@ -115,7 +115,7 @@ func Compact[T comparable](it iter.Seq[T]) iter.Seq[T] {
 	}
 }
 
-func CompactFunc[T any](it iter.Seq[T], eq func(T, T) bool) iter.Seq[T] {
+func CompactFunc[T any](it func(func(T) bool), eq func(T, T) bool) func(func(T) bool) {
 	return func(yield func(T) bool) {
 		var last T
 		var started bool
@@ -133,7 +133,7 @@ func CompactFunc[T any](it iter.Seq[T], eq func(T, T) bool) iter.Seq[T] {
 	}
 }
 
-func GroupBy[T, K comparable](it iter.Seq[T], keyFn func(T) K) map[K][]T {
+func GroupBy[T, K comparable](it func(func(T) bool), keyFn func(T) K) map[K][]T {
 	m := make(map[K][]T)
 	for t := range it {
 		k := keyFn(t)
