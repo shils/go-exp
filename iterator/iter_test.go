@@ -137,3 +137,34 @@ func TestTakeWhile(t *testing.T) {
 		assert.DeepEqual(t, result, tc.want)
 	}
 }
+
+func TestAccumulate(t *testing.T) {
+	it := slices.Values([]int{1, 2, 3, 4})
+	sum := func(acc, n int) int {
+		return acc + n
+	}
+
+	result := slices.Collect(Accumulate(it, sum))
+	expected := []int{1, 3, 6, 10}
+
+	assert.DeepEqual(t, result, expected)
+}
+
+func TestChunk(t *testing.T) {
+	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	tests := []struct {
+		size int
+		want [][]int
+	}{
+		{3, [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}},
+		{4, [][]int{{1, 2, 3, 4}, {5, 6, 7, 8}, {9}}},
+		{11, [][]int{{1, 2, 3, 4, 5, 6, 7, 8, 9}}},
+		{1, [][]int{{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}}},
+	}
+
+	for _, tc := range tests {
+		it := Chunk(slices.Values(nums), tc.size)
+		assert.DeepEqual(t, slices.Collect(it), tc.want)
+	}
+}

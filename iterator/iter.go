@@ -151,3 +151,45 @@ func TakeWhile[T any](it func(func(T) bool), cond func(T) bool) func(func(T) boo
 		}
 	}
 }
+
+func Accumulate[T any](it func(func(T) bool), fn func(T, T) T) func(func(T) bool) {
+	return func(yield func(T) bool) {
+		next, stop := iter.Pull(it)
+		defer stop()
+
+		v, ok := next()
+		if !ok {
+			return
+		}
+
+		acc := v
+		for yield(acc) {
+			if v, ok = next(); !ok {
+				return
+			} else {
+				acc = fn(acc, v)
+			}
+		}
+	}
+}
+
+func Chunk[T any](it func(func(T) bool), size int) func(func([]T) bool) {
+	return func(yield func([]T) bool) {
+		batch := make([]T, size)
+		i := 0
+		for t := range it {
+			batch[i] = t
+			i++
+			if i == size {
+				if !yield(batch) {
+					return
+				}
+				i = 0
+				batch = make([]T, size)
+			}
+		}
+		if i > 0 {
+			yield(batch[:i])
+		}
+	}
+}
