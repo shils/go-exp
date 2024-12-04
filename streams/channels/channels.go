@@ -1,66 +1,24 @@
 package channels
 
 import (
-	"container/heap"
 	"context"
 	"go-exp/functions/reducers"
+	expiter "go-exp/iterator"
 	"golang.org/x/exp/constraints"
 	"sync"
 )
 
-type indexedItem[T constraints.Ordered] struct {
-	v T
-	i int
-}
-
-type indexedHeap[T constraints.Ordered] []indexedItem[T]
-
-// sort
-
-func (h indexedHeap[T]) Len() int           { return len(h) }
-func (h indexedHeap[T]) Less(i, j int) bool { return h[i].v < h[j].v }
-func (h indexedHeap[T]) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-// heap
-
-func (h *indexedHeap[T]) Push(x any) {
-	*h = append(*h, x.(indexedItem[T]))
-}
-
-func (h *indexedHeap[T]) Pop() any {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
-}
-
 func MergeOrdered[T constraints.Ordered](streams ...<-chan T) <-chan T {
+	its := make([]func(func(T) bool), len(streams))
+	for i, stream := range streams {
+		its[i] = Iterator(stream)
+	}
+
 	out := make(chan T, len(streams))
 	go func() {
 		defer close(out)
-		nOpen := len(streams)
-
-		h := &indexedHeap[T]{}
-		for i := 0; i < len(streams); i++ {
-			v, ok := <-streams[i]
-			if ok {
-				h.Push(indexedItem[T]{v, i})
-			} else {
-				nOpen--
-			}
-		}
-		heap.Init(h)
-
-		for nOpen > 0 {
-			item := heap.Pop(h).(indexedItem[T])
-			out <- item.v
-			next, ok := <-streams[item.i]
-			if ok {
-				heap.Push(h, indexedItem[T]{next, item.i})
-			} else {
-				nOpen--
-			}
+		for t := range expiter.MergeOrdered(its...) {
+			out <- t
 		}
 	}()
 	return out
