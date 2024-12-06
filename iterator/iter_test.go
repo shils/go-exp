@@ -168,3 +168,33 @@ func TestChunk(t *testing.T) {
 		assert.DeepEqual(t, slices.Collect(it), tc.want)
 	}
 }
+
+func TestFirst(t *testing.T) {
+	it := slices.Values([]int{4, 3, 2, 1})
+	result, ok := First(it)
+	assert.Equal(t, result, 4)
+	assert.Assert(t, ok)
+
+	it = slices.Values([]int{})
+	result, ok = First(it)
+	assert.Equal(t, result, 0)
+	assert.Assert(t, !ok)
+}
+
+func TestFirstOrElse(t *testing.T) {
+	it := slices.Values([]int{4, 3, 2, 1})
+	result := FirstOrElse(it, 10)
+	assert.Equal(t, result, 4)
+
+	it = slices.Values([]int{})
+	result = FirstOrElse(it, 10)
+	assert.Equal(t, result, 10)
+}
+
+func TestFlatten(t *testing.T) {
+	it := slices.Values([][]int{{1, 2}, {3, 4}, {5, 6}})
+	result := slices.Collect(Flatten(it))
+	expected := []int{1, 2, 3, 4, 5, 6}
+
+	assert.DeepEqual(t, result, expected)
+}

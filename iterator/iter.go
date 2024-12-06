@@ -193,3 +193,30 @@ func Chunk[T any](it func(func(T) bool), size int) func(func([]T) bool) {
 		}
 	}
 }
+
+func First[T any](it func(func(T) bool)) (T, bool) {
+	for t := range it {
+		return t, true
+	}
+	var zero T
+	return zero, false
+}
+
+func FirstOrElse[T any](it func(func(T) bool), defaultVal T) T {
+	if t, ok := First(it); ok {
+		return t
+	}
+	return defaultVal
+}
+
+func Flatten[T any, S ~[]T](it func(func(S) bool)) func(func(T) bool) {
+	return func(yield func(T) bool) {
+		for s := range it {
+			for _, t := range s {
+				if !yield(t) {
+					return
+				}
+			}
+		}
+	}
+}
