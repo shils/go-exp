@@ -1,11 +1,13 @@
 package iterator
 
 import (
+	"go-exp/functions/partials"
 	"gotest.tools/v3/assert"
 	"maps"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -197,4 +199,44 @@ func TestFlatten(t *testing.T) {
 	expected := []int{1, 2, 3, 4, 5, 6}
 
 	assert.DeepEqual(t, result, expected)
+}
+
+func TestTee(t *testing.T) {
+	it := slices.Values([]int{4, 3, 2, 1})
+	its := Tee(it, 2)
+
+	result1 := slices.Collect(its[0])
+	result2 := slices.Collect(its[1])
+
+	expected := []int{4, 3, 2, 1}
+	assert.DeepEqual(t, result1, expected)
+	assert.DeepEqual(t, result2, expected)
+}
+
+func BenchmarkTee(b *testing.B) {
+	if b.N > 10000000 {
+		b.Skipf("N too large: %d", b.N)
+	}
+
+	it := TakeWhile(Generate(b.N, func(x int) int { return x - 1 }), partials.Gt(0))
+	its := Tee(it, 10)
+
+	results := make([][]int, 10)
+
+	var wg sync.WaitGroup
+
+	for i := range 10 {
+		wg.Add(1)
+		go func() {
+			results[i] = slices.Collect(its[i])
+			wg.Done()
+		}()
+	}
+
+	expected := slices.Collect(TakeWhile(Generate(b.N, func(x int) int { return x - 1 }), partials.Gt(0)))
+
+	wg.Wait()
+	for _, result := range results {
+		assert.DeepEqual(b, result, expected)
+	}
 }

@@ -2,6 +2,8 @@ package iterator
 
 import (
 	"iter"
+	"slices"
+	"sync"
 )
 
 func Map[T, V any](it func(func(T) bool), fn func(T) V) func(func(V) bool) {
@@ -219,4 +221,65 @@ func Flatten[T any, S ~[]T](it func(func(S) bool)) func(func(T) bool) {
 			}
 		}
 	}
+}
+
+type teeState[T any] struct {
+	next      func() (T, bool)
+	mu        sync.Mutex
+	buf       []T
+	positions []int
+}
+
+func (s *teeState[T]) advanceOne(i int) (T, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.positions[i] == len(s.buf) {
+		t, ok := s.next()
+		if !ok {
+			return t, ok
+		}
+		s.buf = append(s.buf, t)
+		minPos := slices.Min(s.positions)
+		if minPos > 0 {
+			s.buf = s.buf[minPos:]
+			for j := range s.positions {
+				s.positions[j] -= minPos
+			}
+		}
+	}
+	pos := s.positions[i]
+	s.positions[i]++
+	return s.buf[pos], true
+}
+
+func Tee[T any](it func(func(T) bool), n int) []func(func(T) bool) {
+	next, stop := iter.Pull(it)
+
+	state := &teeState[T]{
+		next:      next,
+		positions: make([]int, n),
+	}
+	stopped := 0
+
+	outs := make([]func(func(T) bool), n)
+	for i := range n {
+		i := i
+		outs[i] = func(yield func(T) bool) {
+			for {
+				t, ok := state.advanceOne(i)
+				if !ok {
+					return
+				}
+				if !yield(t) {
+					stopped++
+					break
+				}
+			}
+			if stopped == n {
+				stop()
+			}
+		}
+	}
+	return outs
 }
